@@ -118,3 +118,20 @@ FROM (
     SELECT ID /* Determina las aplicaciones gratis que hay*/
     FROM APLICACION
     WHERE COSTO = 0) ;
+
+/* 6) */
+
+SELECT 
+  SUM(DECODE(to_char(FECHA,'MM/YYYY'),'01/' || '2013' ,1,0)) "Enero",
+  SUM(DECODE(to_char(FECHA,'MM/YYYY'),'02/' || '2013' ,1,0)) "Febrero",
+  SUM(DECODE(to_char(FECHA,'MM/YYYY'),'03/' || '2013' ,1,0)) "Marzo",
+  SUM(DECODE(to_char(FECHA,'MM/YYYY'),'04/' || '2013' ,1,0)) "Abril",
+  SUM(DECODE(to_char(FECHA,'MM/YYYY'),'05/' || '2013' ,1,0)) "Mayo",
+  SUM(DECODE(to_char(FECHA,'MM/YYYY'),'06/' || '2013' ,1,0)) "Junio",
+  SUM(DECODE(to_char(FECHA,'MM/YYYY'),'07/' || '2013' ,1,0)) "Julio",
+  SUM(DECODE(to_char(FECHA,'MM/YYYY'),'08/' || '2013' ,1,0)) "Agosto",
+  SUM(DECODE(to_char(FECHA,'MM/YYYY'),'09/' || '2013' ,1,0)) "Septiembre",
+  SUM(DECODE(to_char(FECHA,'MM/YYYY'),'10/' || '2013' ,1,0)) "Octubre",
+  SUM(DECODE(to_char(FECHA,'MM/YYYY'),'11/' || '2013' ,1,0)) "Noviembre",
+  SUM(DECODE(to_char(FECHA,'MM/YYYY'),'12/' || '2013' ,1,0)) "Diciembre"
+FROM DESCARGA;
