@@ -78,3 +78,43 @@ JOIN (SELECT d.USO_ID as ident, /* Más óptimo que el de arriba */
       GROUP BY d.USO_ID) ds
 ON u.ID = ds.ident
 ORDER BY u.ID;
+
+/* 4) */
+
+ELECT VER_APL_ID, COUNT(*) AS cuenta /* Saco la cantidad de ventas de cada aplicacion */
+FROM DESCARGA
+WHERE VER_APL_ID IS NOT NULL
+GROUP BY VER_APL_ID
+ORDER BY cuenta DESC;
+
+SELECT app.ID, app.NOMBRE, d.CUENTA
+FROM APLICACION app
+JOIN (
+      SELECT VER_APL_ID, COUNT(*) AS cuenta 
+      FROM DESCARGA
+      WHERE VER_APL_ID IS NOT NULL
+      GROUP BY VER_APL_ID
+      ORDER BY cuenta DESC
+      ) d
+ON d.VER_APL_ID = app.ID
+WHERE ROWNUM <= 5;
+
+/* 5) */
+
+SELECT ID /* Determina las aplicaciones gratis que hay*/
+FROM APLICACION
+WHERE COSTO = 0;
+
+SELECT COUNT(*) /* CUENTA LAS APLICACIONES QUE RESTAN DE LAS LINEAS SIGUIENTES */
+FROM (
+    SELECT VER_APL_ID /* SACA LOS IDS DE LAS APLICACIONES QUE HA DESCARGADO EL USUARIO, LOS AGRUPA Y LE RESTA LOS IDS DE LAS APLICACIONES GRATUITAS */
+    FROM DESCARGA
+    WHERE VER_APL_ID IS NOT NULL  
+          AND USO_ID = (SELECT ID FROM USUARIO WHERE NOMBRE = 'Acevedo Mora Jesus Eduardo')
+    GROUP BY VER_APL_ID
+    
+    MINUS
+    
+    SELECT ID /* Determina las aplicaciones gratis que hay*/
+    FROM APLICACION
+    WHERE COSTO = 0) ;
