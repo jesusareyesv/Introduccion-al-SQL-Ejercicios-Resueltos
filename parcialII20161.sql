@@ -1,0 +1,90 @@
+/* GRUPO 1*/
+
+/* 1) */
+SELECT TO_CHAR(FECHA_INI,'MM/YYYY'), 
+       SUM(DECODE(cnodosfibra.LOCALIDAD_PADRE_NODO_INI,NULL,1,0) + DECODE(cnodosfibra.LOCALIDAD_PADRE_NODO_FIN,NULL,1,0)) AS FALLAS_ESTADO,
+       SUM(DECODE(cnodosfibra.LOCALIDAD_PADRE_NODO_INI,NULL,0,1) + DECODE(cnodosfibra.LOCALIDAD_PADRE_NODO_FIN,NULL,0,1)) AS FALLAS_LOCALDIAD
+FROM FALLA f
+JOIN (
+      SELECT ID AS FIBRA_ID, /* así puedo consultar si en el tramo de fibra el nodo_ini o nodo_fin están en un estado o pueblo */
+      (SELECT loc.LOCALIDAD_ID 
+       FROM NODO n
+       JOIN LOCALIDAD loc ON n.LOCALIDAD_ID = loc.ID
+       WHERE n.ID = fibra.NODO_INI) as LOCALIDAD_PADRE_NODO_INI, 
+       (SELECT loc.LOCALIDAD_ID 
+       FROM NODO n
+       JOIN LOCALIDAD loc ON n.LOCALIDAD_ID = loc.ID
+       WHERE n.ID = fibra.NODO_FIN) as LOCALIDAD_PADRE_NODO_FIN
+      FROM FIBRA_OPTICA fibra
+      )cnodosfibra 
+ON f.FIBRA_OPTICA_ID = cnodosfibra.FIBRA_ID
+GROUP BY TO_CHAR(FECHA_INI,'MM/YYYY');
+
+/* 2) */
+      
+SELECT DECODE(CUENTA,0,'No hubo fallas por vandalismo en ese mes','Hubo ' ||CUENTA || ' fallas ese mes') 
+FROM 
+      (SELECT COUNT(*) AS CUENTA
+      FROM FALLA 
+      WHERE CAUSA_ID = (SELECT ID FROM CAUSA WHERE DESCRIPCION = 'Vandalismo')
+      AND TO_CHAR(FECHA_INI,'MM/YYYY') = :mes || '/' || :anho);
+      
+/* 3) */
+
+SELECT TO_CHAR(SYSDATE - 45,'DD/MM/YYYY') FROM DUAL;
+
+
+
+SELECT * FROM FIBRA_OPTICA fo
+JOIN (SELECT fib.ID AS ID, COUNT(*) AS CANTIDAD_FALLAS_FIBRA
+      FROM FIBRA_OPTICA fib
+      JOIN FALLA falla ON fib.ID = falla.FIBRA_OPTICA_ID
+      WHERE falla.FECHA_INI >= (SYSDATE - 45)
+      GROUP BY fib.ID) b ON fo.ID = b.ID 
+      ORDER BY fo.ID;
+
+
+SELECT fib.ID AS ID, COUNT(*) AS CANTIDAD_FALLAS_FIBRA, fib.NODO_INI AS NODO_INI, fib.NODO_FIN AS NODO_FIN/* MEJOR ESTA QUE EL ANTERIOR */
+      FROM FIBRA_OPTICA fib
+      JOIN FALLA falla ON fib.ID = falla.FIBRA_OPTICA_ID
+      WHERE falla.FECHA_INI >= (SYSDATE - 45)
+      GROUP BY fib.ID, fib.NODO_INI, fib.NODO_FIN
+      ORDER BY fib.ID;
+      
+SELECT n.ID, n.LOCALIDAD_ID, SUM(rec.CANTIDAD_FALLAS_FIBRA)
+FROM NODO n
+JOIN (
+      SELECT fib.ID AS ID, COUNT(*) AS CANTIDAD_FALLAS_FIBRA, fib.NODO_INI AS NODO_INI, fib.NODO_FIN AS NODO_FIN/* MEJOR ESTA QUE EL ANTERIOR */
+      FROM FIBRA_OPTICA fib
+      JOIN FALLA falla ON fib.ID = falla.FIBRA_OPTICA_ID
+      WHERE falla.FECHA_INI >= (SYSDATE - 45)
+      GROUP BY fib.ID, fib.NODO_INI, fib.NODO_FIN
+      ORDER BY fib.ID
+      ) rec ON (n.ID = rec.NODO_INI OR n.ID = rec.NODO_FIN)
+GROUP BY n.ID, n.LOCALIDAD_ID
+ORDER BY n.ID;
+
+SELECT * FROM (
+  SELECT loc.ID, loc.NOMBRE, SUM(nod.FALLAS_NODO)
+  FROM LOCALIDAD loc
+  JOIN (SELECT n.ID, n.LOCALIDAD_ID, SUM(rec.CANTIDAD_FALLAS_FIBRA) AS FALLAS_NODO
+        FROM NODO n
+        JOIN (
+              SELECT fib.ID AS ID, COUNT(*) AS CANTIDAD_FALLAS_FIBRA, fib.NODO_INI AS NODO_INI, fib.NODO_FIN AS NODO_FIN/* MEJOR ESTA QUE EL ANTERIOR */
+              FROM FIBRA_OPTICA fib
+              JOIN FALLA falla ON fib.ID = falla.FIBRA_OPTICA_ID
+              WHERE falla.FECHA_INI >= (SYSDATE - 45)
+              GROUP BY fib.ID, fib.NODO_INI, fib.NODO_FIN
+              ORDER BY fib.ID
+              ) rec ON (n.ID = rec.NODO_INI OR n.ID = rec.NODO_FIN)
+        GROUP BY n.ID, n.LOCALIDAD_ID) nod 
+  ON loc.ID = nod.LOCALIDAD_ID
+  GROUP BY loc.ID, loc.NOMBRE
+  ORDER BY SUM(nod.FALLAS_NODO) DESC
+) WHERE ROWNUM <= 5;
+
+/* 2do grupo */
+SELECT FALLA_FIBRA_OPTICA_ID, FALLA_FECHA_INI, count(distinct RECURSO_RCO_ID) AS CUENTA_RECURSOS 
+FROM RECURSO_FALLA
+GROUP BY FALLA_FIBRA_OPTICA_ID,FALLA_FECHA_INI
+HAVING  count(distinct RECURSO_RCO_ID) = (SELECT COUNT(*) FROM RECURSO);
